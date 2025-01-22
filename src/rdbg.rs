@@ -1,6 +1,5 @@
 use log::{error, info};
 use rand::Rng;
-use regex::Regex;
 use serde_json::json;
 use std::collections::HashMap;
 use std::io::{self, Write};
@@ -65,32 +64,9 @@ pub async fn spawn_rdbg(port: u16, tx: watch::Sender<bool>) -> Result<(), io::Er
     if let Some(stderr) = child.stderr.take() {
         let mut stderr_reader = AsyncBufReader::new(stderr).lines();
         let tx = tx.clone();
-        let port_regex = Regex::new(r"TCP/IP \((\d+\.\d+\.\d+\.\d+):(\d+)\)").unwrap();
         tokio::spawn(async move {
             while let Some(line) = stderr_reader.next_line().await.unwrap_or(None) {
                 info!("STDERR: {}", line);
-
-                if let Some(captures) = port_regex.captures(&line) {
-                    if let (Some(host_str), Some(port_str)) = (captures.get(1), captures.get(2)) {
-                        info!(
-                            "rdbg listening on {}:{}",
-                            host_str.as_str(),
-                            port_str.as_str()
-                        );
-                        if let Ok(listening_port) = port_str.as_str().parse::<u16>() {
-                            if listening_port != port {
-                                error!(
-                                    "rdbg is listening on port {}, but expected {}",
-                                    listening_port, port
-                                );
-                                let _ = tx.send(false);
-                            }
-                        } else {
-                            error!("Failed to parse port from message {}", line);
-                            let _ = tx.send(false);
-                        }
-                    }
-                }
                 if line.contains("DEBUGGER: wait for debugger connection...") {
                     info!("rdbg is ready");
                     let _ = tx.send(true);
