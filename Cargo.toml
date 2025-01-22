@@ -1,0 +1,13 @@
+[package]
+name = "rdbg"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+env_logger = "0.10"
+log = "0.4"
+rand = "0.8"
+regex = "1.5"
+serde = "1.0"
+serde_json = "1.0"
+tokio = { version = "1", features = ["full"] }
